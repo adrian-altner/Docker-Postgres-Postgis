@@ -2,8 +2,6 @@ POSTGRES_DB=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=f00na9pd21qvyost
 
-container name: postgres
-
 Dokploy Netzwerk: `dokploy-network` (Compose nutzt ein externes Netzwerk mit diesem Namen).
 
 ## PostGIS (Apple Silicon / lokal bauen)
@@ -29,7 +27,7 @@ apt install postgresql-client-common
 ## 1. In den PostgreSQL-Container einloggen
 
 ```bash
-docker exec -it postgres psql -U postgres 
+docker compose exec postgres psql -U postgres 
 ```
 
 postgres=# \conninfo

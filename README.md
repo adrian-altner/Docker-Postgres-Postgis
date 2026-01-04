@@ -3,7 +3,7 @@
 Dieses Setup betreibt **PostgreSQL 16 + PostGIS** per Docker Compose (Dokploy/Hetzner).  
 PostGIS wird über ein **lokal gebautes Image** installiert (wichtig, wenn du nicht auf ein fertiges `postgis/*` Image setzen willst).
 
-Persistenz erfolgt über einen **Bind-Mount** nach `/srv/postgres/pgdata` auf dem Host.
+Persistenz erfolgt standardmäßig über ein **named volume** (`pgdata`).
 
 ---
 
@@ -13,16 +13,15 @@ Persistenz erfolgt über einen **Bind-Mount** nach `/srv/postgres/pgdata` auf de
 - Zugriff als `root` oder via `sudo`
 - (Dokploy) Externes Docker-Netzwerk `dokploy-network` (wird von Dokploy i.d.R. angelegt; sonst einmalig: `docker network create dokploy-network`)
 - `.env` im selben Ordner wie `docker-compose.yml` mit:
-  - `POSTGRES_USER`
-  - `POSTGRES_PASSWORD`
-  - `POSTGRES_DB`
+  - `POSTGRES_PASSWORD` (Pflicht)
+  - optional: `POSTGRES_USER`, `POSTGRES_DB`
 
 Beispiel `.env`:
 
 ```env
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=CHANGEME
-POSTGRES_DB=db_name
+POSTGRES_DB=postgres
 
 # optional: zusätzliche User/DBs + Extensions (laufen nur beim ersten Init, wenn PGDATA leer ist)
 # Format: comma-separated
@@ -33,20 +32,7 @@ EXTRA_EXTENSIONS=postgis,pgcrypto
 
 ---
 
-## 1) Datenordner (Bind-Mount) auf dem Host anlegen
-
-Einmalig auf dem Server:
-
-```bash
-mkdir -p /srv/postgres/pgdata
-chown -R 999:999 /srv/postgres/pgdata
-```
-
-Hinweis: UID/GID `999:999` ist im offiziellen `postgres` Image üblich. Falls du Permission-Fehler siehst, prüfe den Container-User und passe Ownership an.
-
----
-
-## 2) Image bauen und Container starten
+## 1) Image bauen und Container starten
 
 Im Ordner `Dokploy/Postgres/`:
 
@@ -74,7 +60,7 @@ PostGIS ist **pro Datenbank** eine Extension (Installation im Image reicht nicht
 Optional: Wenn du `EXTRA_EXTENSIONS=postgis` setzt, wird PostGIS beim ersten Init automatisch aktiviert.
 
 ```bash
-docker exec -it postgres psql -U postgres -d db_name
+docker compose exec postgres psql -U postgres -d postgres
 ```
 
 In `psql`:
@@ -97,13 +83,13 @@ SELECT ST_AsText(ST_Point(13.4050, 52.5200));
 Backup (Custom Format):
 
 ```bash
-docker exec -t postgres pg_dump -U postgres -d db_name -Fc > db_name.dump
+docker compose exec -T postgres pg_dump -U postgres -d postgres -Fc > postgres.dump
 ```
 
 Restore:
 
 ```bash
-cat db_name.dump | docker exec -i postgres pg_restore -U postgres -d db_name --no-owner --no-acl -v
+cat postgres.dump | docker compose exec -T postgres pg_restore -U postgres -d postgres --no-owner --no-acl -v
 ```
 
 ---
