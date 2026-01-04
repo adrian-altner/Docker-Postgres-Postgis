@@ -6,6 +6,10 @@ PostGIS wird über ein **lokal gebautes Image** installiert (wichtig, wenn du ni
 Persistenz erfolgt über einen **Bind-Mount** nach `/srv/postgres/pgdata` auf dem Host.  
 Hinweis: `PGDATA` zeigt auf ein Unterverzeichnis (`/var/lib/postgresql/data/pgdata`), damit `initdb` auch dann funktioniert, wenn das Mount-Root nicht leer ist.
 
+Wichtig für Redeploys (Daten behalten):
+- Mount muss auf genau `PGDATA` zeigen: `/srv/postgres/pgdata:/var/lib/postgresql/data/pgdata`
+- `PGDATA` nicht abweichend in Dokploy überschreiben (sonst startet ggf. ein leerer neuer Cluster).
+
 ---
 
 ## Voraussetzungen
