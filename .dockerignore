@@ -1,0 +1,8 @@
+# Ignore everything by default, then include only what the image build needs.
+*
+
+!Dockerfile
+!docker-entrypoint-initdb.d/
+!docker-entrypoint-initdb.d/**
+!entrypoint-wrapper.sh
+!pg-extra-apply.template.sh

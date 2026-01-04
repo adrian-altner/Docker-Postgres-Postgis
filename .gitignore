@@ -1,0 +1,19 @@
+# Ignore everything by default, then explicitly allow tracked project files.
+*
+
+!.gitignore
+!.dockerignore
+
+!docker-compose.yml
+!Dockerfile
+!README.md
+!dokploy.md
+
+!entrypoint-wrapper.sh
+!pg-extra-apply.template.sh
+
+!docker-entrypoint-initdb.d/
+!docker-entrypoint-initdb.d/**
+
+!scripts/
+!scripts/**
