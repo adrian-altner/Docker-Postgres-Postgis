@@ -23,6 +23,12 @@ Beispiel `.env`:
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=CHANGEME
 POSTGRES_DB=db_name
+
+# optional: zusätzliche User/DBs + Extensions (laufen nur beim ersten Init, wenn PGDATA leer ist)
+# Format: comma-separated
+EXTRA_USERS=app_user:CHANGEME,readonly_user:CHANGEME
+EXTRA_DATABASES=app_db:app_user,readonly_db:readonly_user
+EXTRA_EXTENSIONS=postgis,pgcrypto
 ```
 
 ---
@@ -64,6 +70,8 @@ Wichtig:
 ## 3) PostGIS in der Datenbank aktivieren
 
 PostGIS ist **pro Datenbank** eine Extension (Installation im Image reicht nicht).
+
+Optional: Wenn du `EXTRA_EXTENSIONS=postgis` setzt, wird PostGIS beim ersten Init automatisch aktiviert.
 
 ```bash
 docker exec -it postgres psql -U postgres -d db_name
@@ -110,3 +118,32 @@ docker compose up -d
 ```
 
 PostGIS musst du nur einmal pro DB aktivieren (Step 3).
+
+---
+
+## Extra User/DBs nachträglich anlegen (re-run)
+
+Wenn `PGDATA` bereits existiert, laufen Init-Skripte nicht mehr automatisch. Du kannst die Extra-Erstellung dann jederzeit idempotent ausführen:
+
+```bash
+chmod +x scripts/pg-extra-apply.sh
+./scripts/pg-extra-apply.sh
+```
+
+Optional (Overrides nur für diesen Lauf):
+
+```bash
+EXTRA_USERS='app_user:CHANGEME' EXTRA_DATABASES='app_db:app_user' EXTRA_EXTENSIONS='postgis,pgcrypto' ./scripts/pg-extra-apply.sh
+```
+
+Zusätzlich wird im Container (und damit auf dem Host unter `/srv/postgres/pgdata`) ein persistentes Script bereitgestellt:
+
+```bash
+docker compose exec -T postgres /var/lib/postgresql/data/pg-extra-apply.sh
+```
+
+Mit Overrides:
+
+```bash
+docker compose exec -T -e EXTRA_USERS='app_user:CHANGEME' -e EXTRA_DATABASES='app_db:app_user' -e EXTRA_EXTENSIONS='postgis,pgcrypto' postgres /var/lib/postgresql/data/pg-extra-apply.sh
+```
