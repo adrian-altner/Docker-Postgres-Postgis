@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      # Use a subdirectory so initdb succeeds even if the volume mount root isn't empty (e.g. lost+found).
+      PGDATA: /var/lib/postgresql/data/pgdata
       EXTRA_USERS: ${EXTRA_USERS:-}
       EXTRA_DATABASES: ${EXTRA_DATABASES:-}
       EXTRA_EXTENSIONS: ${EXTRA_EXTENSIONS:-}

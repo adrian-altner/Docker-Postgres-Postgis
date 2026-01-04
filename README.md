@@ -3,7 +3,8 @@
 Dieses Setup betreibt **PostgreSQL 16 + PostGIS** per Docker Compose (Dokploy/Hetzner).  
 PostGIS wird über ein **lokal gebautes Image** installiert (wichtig, wenn du nicht auf ein fertiges `postgis/*` Image setzen willst).
 
-Persistenz erfolgt standardmäßig über ein **named volume** (`pgdata`).
+Persistenz erfolgt standardmäßig über ein **named volume** (`pgdata`).  
+Hinweis: `PGDATA` zeigt auf ein Unterverzeichnis (`/var/lib/postgresql/data/pgdata`), damit `initdb` auch dann funktioniert, wenn das Volume-Root nicht leer ist.
 
 ---
 

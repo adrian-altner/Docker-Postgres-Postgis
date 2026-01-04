@@ -2,6 +2,9 @@ POSTGRES_DB=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=f00na9pd21qvyost
 
+# optional (empfohlen): verhindert initdb-Fehler, wenn das Volume-Root nicht leer ist
+PGDATA=/var/lib/postgresql/data/pgdata
+
 Dokploy Netzwerk: `dokploy-network` (Compose nutzt ein externes Netzwerk mit diesem Namen).
 
 ## PostGIS (Apple Silicon / lokal bauen)
