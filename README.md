@@ -11,6 +11,7 @@ Persistenz erfolgt über einen **Bind-Mount** nach `/srv/postgres/pgdata` auf de
 
 - Docker + Compose Plugin: `docker compose version`
 - Zugriff als `root` oder via `sudo`
+- (Dokploy) Externes Docker-Netzwerk `dokploy-network` (wird von Dokploy i.d.R. angelegt; sonst einmalig: `docker network create dokploy-network`)
 - `.env` im selben Ordner wie `docker-compose.yml` mit:
   - `POSTGRES_USER`
   - `POSTGRES_PASSWORD`

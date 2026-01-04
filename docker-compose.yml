@@ -20,5 +20,13 @@ services:
       timeout: 3s
       retries: 20
 
+    networks:
+      - dokploy
+
 volumes:
   pgdata:
+
+networks:
+  dokploy:
+    external: true
+    name: dokploy-network
