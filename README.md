@@ -3,8 +3,8 @@
 Dieses Setup betreibt **PostgreSQL 16 + PostGIS** per Docker Compose (Dokploy/Hetzner).  
 PostGIS wird über ein **lokal gebautes Image** installiert (wichtig, wenn du nicht auf ein fertiges `postgis/*` Image setzen willst).
 
-Persistenz erfolgt standardmäßig über ein **named volume** (`pgdata`).  
-Hinweis: `PGDATA` zeigt auf ein Unterverzeichnis (`/var/lib/postgresql/data/pgdata`), damit `initdb` auch dann funktioniert, wenn das Volume-Root nicht leer ist.
+Persistenz erfolgt über einen **Bind-Mount** nach `/srv/postgres/pgdata` auf dem Host.  
+Hinweis: `PGDATA` zeigt auf ein Unterverzeichnis (`/var/lib/postgresql/data/pgdata`), damit `initdb` auch dann funktioniert, wenn das Mount-Root nicht leer ist.
 
 ---
 
@@ -33,7 +33,20 @@ EXTRA_EXTENSIONS=postgis,pgcrypto
 
 ---
 
-## 1) Image bauen und Container starten
+## 1) Datenordner (Bind-Mount) auf dem Host anlegen
+
+Einmalig auf dem Server:
+
+```bash
+mkdir -p /srv/postgres/pgdata
+chown -R 999:999 /srv/postgres/pgdata
+```
+
+Hinweis: UID/GID `999:999` ist im offiziellen `postgres` Image üblich. Falls du Permission-Fehler siehst, prüfe den Container-User und passe Ownership an.
+
+---
+
+## 2) Image bauen und Container starten
 
 Im Ordner `Dokploy/Postgres/`:
 

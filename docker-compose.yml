@@ -16,7 +16,7 @@ services:
       EXTRA_EXTENSIONS: ${EXTRA_EXTENSIONS:-}
 
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /srv/postgres/pgdata:/var/lib/postgresql/data/pgdata
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
@@ -28,9 +28,6 @@ services:
       dokploy:
         aliases:
           - postgres
-
-volumes:
-  pgdata:
 
 networks:
   dokploy:
