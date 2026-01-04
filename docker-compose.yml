@@ -21,7 +21,9 @@ services:
       retries: 20
 
     networks:
-      - dokploy
+      dokploy:
+        aliases:
+          - postgres
 
 volumes:
   pgdata:
