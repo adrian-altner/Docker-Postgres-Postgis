@@ -11,9 +11,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       # Use a subdirectory so initdb succeeds even if the volume mount root isn't empty (e.g. lost+found).
       PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:-}
       EXTRA_USERS: ${EXTRA_USERS:-}
       EXTRA_DATABASES: ${EXTRA_DATABASES:-}
       EXTRA_EXTENSIONS: ${EXTRA_EXTENSIONS:-}
+      DB_ENCODING: ${DB_ENCODING:-}
+      DB_LOCALE: ${DB_LOCALE:-}
 
     volumes:
       - /srv/postgres/pgdata:/var/lib/postgresql/data/pgdata

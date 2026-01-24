@@ -20,39 +20,66 @@ create_role() {
 
   log "Ensuring role exists: ${role_name}"
   psql_admin --set=role_name="${role_name}" --set=role_pass="${role_pass}" <<'SQL'
-DO $$
-DECLARE
-  name text := :'role_name';
-  pass text := :'role_pass';
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = name) THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', name, pass);
-  END IF;
-END $$;
+SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'role_name', :'role_pass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'role_name')
+\gexec
 SQL
 }
 
 create_db() {
   local db_name="$1"
   local owner_name="${2:-${POSTGRES_USER}}"
+  local encoding="${3:-}"
+  local locale="${4:-}"
 
   if [[ -z "${db_name}" ]]; then
     log "ERROR: EXTRA_DATABASES entry requires db_name or db_name:owner"
     exit 1
   fi
 
-  log "Ensuring database exists: ${db_name} (owner: ${owner_name})"
-  psql_admin --set=db_name="${db_name}" --set=owner_name="${owner_name}" <<'SQL'
-DO $$
-DECLARE
-  db text := :'db_name';
-  owner_role text := :'owner_name';
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = db) THEN
-    EXECUTE format('CREATE DATABASE %I OWNER %I', db, owner_role);
-  END IF;
-END $$;
+  # Build log message
+  local log_msg="Ensuring database exists: ${db_name} (owner: ${owner_name}"
+  [[ -n "${encoding}" ]] && log_msg+=", encoding: ${encoding}"
+  [[ -n "${locale}" ]] && log_msg+=", locale: ${locale}"
+  log_msg+=")"
+  log "${log_msg}"
+
+  # When encoding or locale is specified, use TEMPLATE template0
+  if [[ -n "${encoding}" || -n "${locale}" ]]; then
+    # Build CREATE DATABASE command with encoding and locale
+    local create_cmd="CREATE DATABASE %I OWNER %I TEMPLATE template0"
+    [[ -n "${encoding}" ]] && create_cmd+=" ENCODING %L"
+    [[ -n "${locale}" ]] && create_cmd+=" LC_COLLATE %L LC_CTYPE %L"
+
+    if [[ -n "${encoding}" && -n "${locale}" ]]; then
+      psql_admin --set=db_name="${db_name}" --set=owner_name="${owner_name}" \
+                 --set=encoding="${encoding}" --set=locale="${locale}" <<SQL
+SELECT format('${create_cmd}', :'db_name', :'owner_name', :'encoding', :'locale', :'locale')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+\\gexec
 SQL
+    elif [[ -n "${encoding}" ]]; then
+      psql_admin --set=db_name="${db_name}" --set=owner_name="${owner_name}" \
+                 --set=encoding="${encoding}" <<SQL
+SELECT format('CREATE DATABASE %I OWNER %I TEMPLATE template0 ENCODING %L', :'db_name', :'owner_name', :'encoding')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+\\gexec
+SQL
+    else
+      psql_admin --set=db_name="${db_name}" --set=owner_name="${owner_name}" \
+                 --set=locale="${locale}" <<SQL
+SELECT format('CREATE DATABASE %I OWNER %I TEMPLATE template0 LC_COLLATE %L LC_CTYPE %L', :'db_name', :'owner_name', :'locale', :'locale')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+\\gexec
+SQL
+    fi
+  else
+    psql_admin --set=db_name="${db_name}" --set=owner_name="${owner_name}" <<'SQL'
+SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'owner_name')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+\gexec
+SQL
+  fi
 }
 
 enable_extensions() {
@@ -70,14 +97,8 @@ enable_extensions() {
     log "Ensuring extension in ${db_name}: ${ext}"
     psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${db_name}" \
       --set=ext_name="${ext}" <<'SQL'
-DO $$
-DECLARE
-  ext text := :'ext_name';
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = ext) THEN
-    EXECUTE format('CREATE EXTENSION %I', ext);
-  END IF;
-END $$;
+SELECT format('CREATE EXTENSION IF NOT EXISTS %I', :'ext_name')
+\gexec
 SQL
   done
 }
@@ -86,6 +107,8 @@ main() {
   local extra_users="${EXTRA_USERS:-}"
   local extra_databases="${EXTRA_DATABASES:-}"
   local extra_extensions="${EXTRA_EXTENSIONS:-}"
+  local db_encoding="${DB_ENCODING:-}"
+  local db_locale="${DB_LOCALE:-}"
 
   if [[ -z "${extra_users}${extra_databases}${extra_extensions}" ]]; then
     log "No EXTRA_USERS/EXTRA_DATABASES/EXTRA_EXTENSIONS set; skipping."
@@ -110,13 +133,18 @@ main() {
     for db_spec in "${dbs[@]}"; do
       db_spec="$(echo "${db_spec}" | xargs)"
       [[ -z "${db_spec}" ]] && continue
-      if [[ "${db_spec}" == *:* ]]; then
-        create_db "${db_spec%%:*}" "${db_spec#*:}"
-        enable_extensions "${db_spec%%:*}" "${extra_extensions}"
-      else
-        create_db "${db_spec}" "${POSTGRES_USER}"
-        enable_extensions "${db_spec}" "${extra_extensions}"
-      fi
+
+      # Parse extended format: db_name:owner:encoding:locale
+      local db_name owner encoding locale
+      IFS=':' read -r db_name owner encoding locale <<< "${db_spec}"
+
+      # Apply defaults
+      owner="${owner:-${POSTGRES_USER}}"
+      encoding="${encoding:-${db_encoding}}"
+      locale="${locale:-${db_locale}}"
+
+      create_db "${db_name}" "${owner}" "${encoding}" "${locale}"
+      enable_extensions "${db_name}" "${extra_extensions}"
     done
   fi
 

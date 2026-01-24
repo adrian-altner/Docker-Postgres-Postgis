@@ -33,7 +33,44 @@ POSTGRES_DB=postgres
 EXTRA_USERS=app_user:CHANGEME,readonly_user:CHANGEME
 EXTRA_DATABASES=app_db:app_user,readonly_db:readonly_user
 EXTRA_EXTENSIONS=postgis,pgcrypto
+
+# optional: Encoding und Locale für neue Datenbanken
+DB_ENCODING=UTF8
+DB_LOCALE=de_DE.UTF-8
 ```
+
+---
+
+## Encoding und Locale-Konfiguration
+
+Neue Datenbanken können mit spezifischem Encoding und Locale erstellt werden.
+
+**Cluster-Level (initdb):**
+
+```env
+POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=de_DE.UTF-8
+```
+
+**Default für alle EXTRA_DATABASES:**
+
+```env
+DB_ENCODING=UTF8
+DB_LOCALE=de_DE.UTF-8
+EXTRA_DATABASES=app_db:app_user
+```
+
+**Erweitertes Format (pro Datenbank):**
+
+Format: `db_name:owner:encoding:locale`
+
+```env
+# Alle DBs mit UTF8/en_US, außer german_app mit de_DE
+DB_ENCODING=UTF8
+DB_LOCALE=en_US.UTF-8
+EXTRA_DATABASES=english_app:user1,german_app:user2:UTF8:de_DE.UTF-8
+```
+
+Hinweis: Felder können leer gelassen werden; PostgreSQL-Defaults greifen dann.
 
 ---
 
